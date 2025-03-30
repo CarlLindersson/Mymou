@@ -9,6 +9,8 @@ import android.util.Log;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
+import android.view.View; // Import for View
+
 import mymou.R;
 import mymou.Utils.UtilsSystem;
 
@@ -234,6 +236,68 @@ public class PreferencesManager {
         t_one_num_presses = sharedPrefs.getInt(r.getString(R.string.preftag_t_one_num_presses), r.getInteger(R.integer.default_t_one_num_presses));
         t_four_num_static_cue_pos = sharedPrefs.getInt(r.getString(R.string.preftag_t_four_num_static_pos), r.getInteger(R.integer.default_t_four_num_static_pos));
         skip_go_cue = sharedPrefs.getBoolean(r.getString(R.string.preftag_skip_go_cue), r.getBoolean(R.bool.default_t_one_skip_go_cue));
+
+        // TODO: Get this working
+        int t_random_reward_stop_time_ms = t_random_reward_stop_time * 1000;
+        responseduration += t_random_reward_stop_time_ms;
+
+    }
+
+    public void continuousMazeTasks() {
+
+        int screen_colour = 1; //Integer.valueOf(sharedPrefs.getString(r.getString(R.string.preftag_t_one_screen_colour), Integer.toString(r.getInteger(R.integer.default_t_one_screen_colour))));
+        t_one_screen_colour = colors[screen_colour];
+        t_random_reward_start_time = sharedPrefs.getInt(r.getString(R.string.preftag_t_random_reward_start), r.getInteger(R.integer.default_random_reward_start));
+        t_random_reward_stop_time = sharedPrefs.getInt(r.getString(R.string.preftag_t_random_reward_stop), r.getInteger(R.integer.default_random_reward_stop));
+        t_one_num_presses = sharedPrefs.getInt(r.getString(R.string.preftag_t_one_num_presses), r.getInteger(R.integer.default_t_one_num_presses));
+        t_four_num_static_cue_pos = sharedPrefs.getInt(r.getString(R.string.preftag_t_four_num_static_pos), r.getInteger(R.integer.default_t_four_num_static_pos));
+        skip_go_cue = sharedPrefs.getBoolean(r.getString(R.string.preftag_skip_go_cue), r.getBoolean(R.bool.default_t_one_skip_go_cue));
+
+        // Ensure rewardBackground stays the same as taskBackground
+        int taskBackgroundColourIndex = Integer.valueOf(sharedPrefs.getString(r.getString(R.string.preftag_taskbackgroundcolour), Integer.toString(r.getInteger(R.integer.default_taskbackgroundcolour))));
+        taskbackground = colors[taskBackgroundColourIndex];
+        rewardbackground = taskbackground; // Set rewardBackground to be the same as taskBackground
+        timeoutbackground = taskbackground; // Set timeoutBackground to be the same as taskBackground
+
+        // To modify and persist the settings even after killTask() method is called
+        SharedPreferences.Editor editor = sharedPrefs.edit();
+
+        // Event codes: retrieve the correct trial and error trial event codes
+        ec_incorrect_trial = sharedPrefs.getString(r.getString(R.string.preftag_eventcode_error_trial), r.getString(R.string.default_eventcode_error_trial));
+        ec_correct_trial = sharedPrefs.getString(r.getString(R.string.preftag_eventcode_correct_trial), r.getString(R.string.default_eventcode_correct_trial));
+        ec_trial_timeout = sharedPrefs.getString(r.getString(R.string.preftag_eventcode_timeout_trial), r.getString(R.string.default_eventcode_timeout_trial));
+        ec_wrong_gocue_pressed = sharedPrefs.getString(r.getString(R.string.preftag_eventcode_wrong_gocue), r.getString(R.string.default_eventcode_wrong_gocue));
+        ec_trial_started = sharedPrefs.getString(r.getString(R.string.preftag_eventcode_start_trial), r.getString(R.string.default_eventcode_start_trial));
+        ec_trial_prepared = sharedPrefs.getString(r.getString(R.string.preftag_eventcode_trial_prepared), r.getString(R.string.default_eventcode_trial_prepared));
+
+        editor.putString(r.getString(R.string.preftag_eventcode_correct_trial), "CORRECT_TRIAL_CODE");
+        editor.putString(r.getString(R.string.preftag_eventcode_error_trial), "ERROR_TRIAL_CODE");
+        editor.putString(r.getString(R.string.preftag_eventcode_timeout_trial), "TIMEOUT_TRIAL");
+        editor.putString(r.getString(R.string.preftag_eventcode_wrong_gocue), "WRONG GO CUE PRESSED");
+        editor.putString(r.getString(R.string.preftag_eventcode_start_trial), "START TRIAL");
+        editor.putString(r.getString(R.string.preftag_eventcode_trial_prepared), "TRIAL PREPARED");
+
+        // Reward Duration
+        //rewardduration = 200;
+        //editor.putInt(r.getString(R.string.preftag_rewardduration), rewardduration);
+
+        // Save the task background color by finding its index in the color array
+        int newTaskBackgroundColorIndex = 1;  // Assuming you want to set the 4th color in your color array
+        editor.putString(r.getString(R.string.preftag_taskbackgroundcolour), Integer.toString(newTaskBackgroundColorIndex));
+
+        // Save the reward background color similarly
+        int newRewardBackgroundColorIndex = 1;  // Assuming you want to set the 6th color in your color array
+        editor.putString(r.getString(R.string.preftag_rewardbackgroundcolour), Integer.toString(newRewardBackgroundColorIndex));
+
+        // Save the timeout background color similarly
+        int newTimeoutBackgroundColorIndex = 1;  // Assuming you want to set the 8th color in your color array
+        editor.putString(r.getString(R.string.preftag_timeoutbackgroundcolour), Integer.toString(newTimeoutBackgroundColorIndex));
+
+        // Apply the changes to persist them
+        editor.apply(); // You can also use editor.commit() for synchronous saving
+
+        //handle_feedback = false; // prevents endofTrial to go to Correct or Incorrect trial functions
+        timeoutduration = 2000;
 
         // TODO: Get this working
         int t_random_reward_stop_time_ms = t_random_reward_stop_time * 1000;
@@ -534,5 +598,74 @@ public class PreferencesManager {
         colgrat_target_shape = sharedPrefs.getInt(r.getString(R.string.preftag_colgrat_target_shape), r.getInteger(R.integer.default_colgrat_target_shape));
 
     }
+
+    // Methods to save and retrieve Maze properties
+
+    // Cue 1 properties
+    public void setCue1X(float x) {
+        sharedPrefs.edit().putFloat("cue1_x", x).apply();
+    }
+
+    public float getCue1X() {
+        return sharedPrefs.getFloat("cue1_x", 0f);
+    }
+
+    public void setCue1Y(float y) {
+        sharedPrefs.edit().putFloat("cue1_y", y).apply();
+    }
+
+    public float getCue1Y() {
+        return sharedPrefs.getFloat("cue1_y", 0f);
+    }
+
+    public void setCue1Visibility(int visibility) {
+        sharedPrefs.edit().putInt("cue1_visibility", visibility).apply();
+    }
+
+    public int getCue1Visibility() {
+        return sharedPrefs.getInt("cue1_visibility", View.VISIBLE);
+    }
+
+    public void setCue1BackgroundColor(int color) {
+        sharedPrefs.edit().putInt("cue1_background_color", color).apply();
+    }
+
+    public int getCue1BackgroundColor() {
+        return sharedPrefs.getInt("cue1_background_color", R.drawable.circle_shape_white);
+    }
+
+    // Methods to save and retrieve cue2 properties
+    public void setCue2X(float x) {
+        sharedPrefs.edit().putFloat("cue2_x", x).apply();
+    }
+
+    public float getCue2X() {
+        return sharedPrefs.getFloat("cue2_x", 0f);
+    }
+
+    public void setCue2Y(float y) {
+        sharedPrefs.edit().putFloat("cue2_y", y).apply();
+    }
+
+    public float getCue2Y() {
+        return sharedPrefs.getFloat("cue2_y", 0f);
+    }
+
+    public void setCue2Visibility(int visibility) {
+        sharedPrefs.edit().putInt("cue2_visibility", visibility).apply();
+    }
+
+    public int getCue2Visibility() {
+        return sharedPrefs.getInt("cue2_visibility", View.VISIBLE);
+    }
+
+    public void setCue2BackgroundColor(int color) {
+        sharedPrefs.edit().putInt("cue2_background_color", color).apply();
+    }
+
+    public int getCue2BackgroundColor() {
+        return sharedPrefs.getInt("cue2_background_color", R.drawable.circle_shape);
+    }
 }
+
 

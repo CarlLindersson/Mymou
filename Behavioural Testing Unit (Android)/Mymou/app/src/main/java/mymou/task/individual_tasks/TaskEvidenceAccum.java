@@ -21,7 +21,7 @@ import mymou.task.backend.TaskInterface;
  *
  * A 'movie' is played, which consists of two 'progress bars' being flashed on the screen a specified number of times
  * On each flash the height of the two bars differs
- * After movie has finished, subjects must select which bar  had the greatest total height over the movie
+ * After movie has finished, subjects must select which bar had the greatest total height over the movie
  *
  * The amount of evidence shown, and the distance (difficulty) between options can be altered in the options menu
  *
@@ -217,7 +217,6 @@ public class TaskEvidenceAccum extends Task {
         return a;
     }
 
-
     /**
      * Called whenever a cue is pressed by a subject
      * So then loads the next appropriate stage of the task depending on what cue was selected
@@ -254,6 +253,7 @@ public class TaskEvidenceAccum extends Task {
      * If task aborted for some reason (e.g. they did not respond quick enough), then cancel the handlers to stop the movie playing
      * This prevents task objects being loaded AFTER a trial has finished
      */
+
     @Override
     public void onPause() {
         super.onPause();

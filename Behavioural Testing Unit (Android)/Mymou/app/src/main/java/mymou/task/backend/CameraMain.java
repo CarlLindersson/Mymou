@@ -191,8 +191,9 @@ public class CameraMain extends Camera
             cameraDevice.close();
             mCameraDevice = null;
             camera_error = true;
+            // new bug fix
+            openCamera();
         }
-
     };
 
     // "onImageAvailable" will be called when a still image is ready to be saved.

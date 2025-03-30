@@ -26,7 +26,6 @@ import mymou.*;
 import mymou.Utils.*;
 import mymou.database.MymouDatabase;
 import mymou.database.Session;
-import mymou.database.User;
 import mymou.preferences.PreferencesManager;
 import mymou.preferences.PrefsActSystem;
 import mymou.task.individual_tasks.*;
@@ -270,9 +269,31 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
             case 19:
                 preferencesManager.ColoredGrating();
                 break;
+            case 20: // Shaping 1: CircleShrinking
+                Log.d(TAG, "Before calling continuousMazeTasks: timeoutbackground = " + preferencesManager.timeoutbackground);
+                preferencesManager.continuousMazeTasks();
+
+                Log.d(TAG, "After calling continuousMazeTasks: timeoutbackground = " + preferencesManager.timeoutbackground);
+                break;
+            case 21:  // Shaping 2: MazeTransition1
+                preferencesManager.continuousMazeTasks();
+                break;
+            case 22: // Shaping 3: mazeTask
+                preferencesManager.continuousMazeTasks();
+                break;
+            case 23: // Shaping 3: mazeTask
+                preferencesManager.continuousMazeTasks();
+                break;
+            case 24: // Shaping 3: mazeTask
+                preferencesManager.continuousMazeTasks();
+                break;
+            case 25: // Shaping 3: mazeTask
+                preferencesManager.continuousMazeTasks();
+                break;
             default:
                 Log.d(TAG, "No task specified");
-                new Exception("No task specified");
+                new Exception("No" +
+                        " task specified");
         }
 
         handle_feedback = preferencesManager.handle_feedback;
@@ -310,7 +331,6 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
         rewardSystem.connectToBluetooth();
         if (rewardSystem.bluetoothConnection | !preferencesManager.bluetooth) {
             successfullyEstablished = enableApp(true);
-
         }
 
         // Repeat if either couldn't connect or couldn't enable app
@@ -414,6 +434,24 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
                 break;
 	        case 19:
                 task = new TaskColoredGrating();
+                break;
+            case 20:
+                task = new TaskCircleShrinking();
+                break;
+            case 21:
+                task = new TaskShapingMazeTransition1();
+                break;
+            case 22:
+                task = new TaskMaze3x3();
+                break;
+            case 23:
+                task = new TaskMaze3x5();
+                break;
+            case 24:
+                task = new TaskMaze4x7();
+                break;
+            case 25:
+                task = new TaskMazeOpt4x7();
                 break;
             default:
                 new Exception("No valid task specified");
@@ -1042,6 +1080,14 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
     }
 
     private static void trialEnded(String result, double rew_scalar) {
+        // Hi James, this function updates l_numcorr = l_numcorr + 1 twice if
+        // result == preferencesManager.ec_correct_trial and handle_feedback == true.
+        // is this a bug or a feature?
+
+        // also, if end of trial is passed using reward scalar on correct trials the trial does not
+        // end as the correctTrial method does not "end the trial" which is problematic for
+        // a method called as a side effect of endofTrial.
+        //
 
         killTask();
 
@@ -1101,6 +1147,43 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
         }
     }
 
+    /*
+    private static void correctTrial(double rew_scalar) {
+
+        if (rew_scalar == 0) {
+            return;
+        }
+
+   //     //activity.findViewById(R.id.background_main).setBackgroundColor(preferencesManager.rewardbackground);
+   //     if (taskId == 21) {  // Assuming 21 is the taskId for TaskShapingMazeTransition1
+
+            // deliverIntermittentReward(preferencesManager.default_rew_chan, rew_scalar);
+   //         endOfTrial(preferencesManager.ec_correct_trial, preferencesManager.rewardduration + 5);
+   //     }
+
+     //   if (taskId == 20) {  // Assuming 20 is the taskId for TaskCircleShrinking
+      //      // Set the reward background
+      //      activity.findViewById(R.id.background_main).setBackgroundColor(preferencesManager.rewardbackground);
+
+              endOfTrial(preferencesManager.ec_correct_trial, preferencesManager.rewardduration + 5);
+
+       // }
+//        else {
+            activity.findViewById(R.id.background_main).setBackgroundColor(preferencesManager.rewardbackground);
+
+            // If only one reward channel, skip reward selection stage
+            if (preferencesManager.num_reward_chans == 1) {
+                deliverReward(preferencesManager.default_rew_chan, rew_scalar);
+            } else {
+                // Otherwise reveal reward cues
+                UtilsTask.randomlyPositionCues(cues_Reward, possible_cue_locs);
+                UtilsTask.toggleCues(cues_Reward, true);
+                updateTvExplanation("Correct trial! Choose your reward");
+
+            }
+        //}
+    }*/
+
     private static void giveRewardFromTask(int reward_duration, boolean sound) {
         if (sound) {
             new SoundManager(preferencesManager).playTone();
@@ -1112,7 +1195,6 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
     public static void FaceRecogFinishedLoading() {
         logEvent("FaceRecog instantiated successfully", false);
     }
-
 
     private static void deliverReward(int juiceChoice, double rew_scalar) {
         // Play tone
@@ -1127,9 +1209,8 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
 
         rewardSystem.activateChannel(juiceChoice, reward_duration_int);
 
-        endOfTrial(preferencesManager.ec_correct_trial, preferencesManager.rewardduration + 5);
+        endOfTrial(preferencesManager.ec_correct_trial, preferencesManager.rewardduration + 5); // why +5??
     }
-
 
     private static void endOfTrial(String outcome, int newTrialDelay) {
         logEvent(outcome, false);
@@ -1145,7 +1226,6 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
             tvExplanation.setText(message);
         }
     }
-
 
     private static void disableAllCues() {
         UtilsTask.toggleCues(cues_Reward, false);
@@ -1205,6 +1285,7 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
                 if (time > preferencesManager.responseduration) {
 
                     Log.d(TAG, "timer Trial timeout " + time);
+                    logEvent("Trial timeout after:" + time + "ms",  false);
                     resetTimer();
                     timerRunning = false;
 

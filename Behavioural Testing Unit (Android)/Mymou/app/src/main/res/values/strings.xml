@@ -36,6 +36,12 @@
         <item>Context Sequence Learning</item>
         <item>Wald\'s Sequential Probability Ratio</item>
         <item>Colored Grating Task</item>
+        <item>Shaping 1: Circle Shrinking</item>
+        <item>Shaping 2: Maze transition 1</item>
+        <item>Shaping 3: 3x3 Maze</item>
+        <item>Shaping 4: 3x5 Maze</item>
+        <item>Shaping 5: 4x7 Maze</item>
+        <item>Shaping 5.1: 4x7 Optimised Mazes</item>
     </string-array>
 
     <string-array name="task_descriptions">
@@ -59,6 +65,8 @@
         <item>Two sounds are displayed followed by a go cue. This is followed by two further sounds and another go cue. Sounds in the first and second sequence can be within the same context or in different contexts.</item>
         <item>Implementation of Wald\'s Sequential Probability Ratio test as described in Kira, Yang, Shadlen (2015) Neuron.</item>
         <item>Implementation of Coloured Grating task as described in van Kempen et al. (2021) Neuron</item>
+        <item>Associates pressing a green circle with reward. The green cue will shrink and move after each press. The minimum cue size can be set based on performance.</item>
+        <item>Three levels of early maze transition shaping. Level 1: touch white + touch green; Level 2: touch white + touch white + touch green; level 3: touch white + touch white + touch white + touch green;</item>
     </string-array>
 
     <string name="default_startuptime">0700</string>

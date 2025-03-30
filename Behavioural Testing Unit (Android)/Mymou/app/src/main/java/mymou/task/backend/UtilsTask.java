@@ -96,6 +96,7 @@ public class UtilsTask {
         layout.addView(button);
         return button;
     }
+
     // Add a colour cue of a particular SHAPE to the task with or without a border
     public static Button addColorCue(int id, int color, Context context, View.OnClickListener onClickListener, ConstraintLayout layout, int shape, boolean border) {
         PreferencesManager preferencesManager = new PreferencesManager(context);

@@ -126,6 +126,7 @@ public class TaskObjectDiscrim extends Task {
             boolean[] chosen_pos_bool = UtilsSystem.getBooleanFalseArray(num_dirs);
 
             choice_cues = new ImageButton[prefManager.od_num_stim + prefManager.od_num_distractors];
+
             // Add correct answer
             for (int i = 0; i < cues.length; i++) {
                 choice_cues[i] = UtilsTask.addImageCue(chosen_cue_id, getContext(), layout, buttonClickListener);
