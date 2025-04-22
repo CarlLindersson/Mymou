@@ -113,7 +113,8 @@ public class TaskMaze4x7 extends Task {
 
     // Cue size
     private int cueSize = 200;
-    private float nodeAlphaLevel = 0.3f;
+    private float nodeAlphaLevel = 0.4f;
+    private int pulsePeriodDuration = 250;
 
     // Move duration
     private int moveDuration = 100;
@@ -250,6 +251,7 @@ public class TaskMaze4x7 extends Task {
                 // If goal node, give reward and end trial
                 if (position == goal) {
                     giveRewardAndEndTrial();
+                    stopPulsation(blueCircle);
                 }
             }
             else {
@@ -365,7 +367,7 @@ public class TaskMaze4x7 extends Task {
     // Method to start the alpha (opacity) pulse animation
     private void startAlphaPulse(View view) {
         AlphaAnimation alphaAnimation = new AlphaAnimation(1.0f, nodeAlphaLevel);  // Pulse from fully visible to 30% opacity
-        alphaAnimation.setDuration(500);  // Duration of each fade in/out cycle
+        alphaAnimation.setDuration(pulsePeriodDuration);  // Duration of each fade in/out cycle
         alphaAnimation.setRepeatMode(Animation.REVERSE);  // Reverse to fade back in
         alphaAnimation.setRepeatCount(Animation.INFINITE);  // Repeat indefinitely
         view.startAnimation(alphaAnimation);
@@ -379,7 +381,7 @@ public class TaskMaze4x7 extends Task {
     // Helper method to create an edge
     public View createEdge(Point start, Point end) {
         View edge = new View(getContext());
-        edge.setBackgroundColor(getResources().getColor(android.R.color.darker_gray));
+        edge.setBackgroundResource(R.drawable.border); //android.R.color.darker_gray
         int edgeThickness = 50;
 
         if (start.x == end.x) {
@@ -436,7 +438,7 @@ public class TaskMaze4x7 extends Task {
 
         // Create nodes for each grid position
         for (Point position : positions) {
-            Button node = createNode(position, R.drawable.circle_shape_white,
+            Button node = createNode(position, R.drawable.greyoutline_circle, // circle_shape_white,
                     null, true, true, false,
                     offsetX, offsetY, gridScale);
             nodes.put(position, node);
@@ -454,7 +456,7 @@ public class TaskMaze4x7 extends Task {
         highlightNodes(currentPosition, goal);
 
         // Highlight start and goal nodes
-        nodes.get(start).setBackgroundResource(R.drawable.circle_shape_white);
+        nodes.get(start).setBackgroundResource(R.drawable.greyoutline_circle);
         nodes.get(goal).setBackgroundResource(R.drawable.circle_shape);
 
         // Set current position to start node and set blue circle to start position.
@@ -507,7 +509,11 @@ public class TaskMaze4x7 extends Task {
             }
             else {
                 if (position != goal) {
-                    node.setAlpha(transparencyLevel); // Non-action nodes are slightly transparent
+                    float transparencyLevel = 1.0f; //0.5f + (num_consecutive_corr / 10.0f) * 0.5f;
+                    transparencyLevel = Math.min(transparencyLevel, 1.0f);
+
+                    node.setAlpha(transparencyLevel);
+                    //node.setAlpha(transparencyLevel); // Non-action nodes are slightly transparent
                 }
             }
 
@@ -706,7 +712,7 @@ public class TaskMaze4x7 extends Task {
 
     private void createBlueCircle(Point initialPosition) {
         blueCircle = new View(getContext());
-        blueCircle.setBackgroundResource(R.drawable.circle_shape_blue); // Use a blue circle drawable
+        blueCircle.setBackgroundResource(R.drawable.circle_hc_blue); // Use a blue circle drawable
         //int cueSize = 500;
         blueCircle.setLayoutParams(new ViewGroup.LayoutParams(cueSize, cueSize));
         blueCircle.setX(initialPosition.x - cueSize / 2);
@@ -717,6 +723,10 @@ public class TaskMaze4x7 extends Task {
         //blueCircle.setVisibility(View.INVISIBLE);
         blueCircle.bringToFront();
         blueCircle.setZ(2f);
+
+        // Make it blink / pulsate
+        //startAlphaPulse(blueCircle);
+
     }
 
     private void animateBlueCircle(Point targetPosition, Runnable onAnimationEnd) {

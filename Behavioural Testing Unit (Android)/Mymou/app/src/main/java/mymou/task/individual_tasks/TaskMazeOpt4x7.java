@@ -924,7 +924,12 @@ public class TaskMazeOpt4x7 extends Task {
                 }
                 else {
                     if (position != goal) {
-                        node.setAlpha(transparencyLevel); // Non-action nodes are slightly transparent
+                        float transparencyLevel = 0.5f + (num_consecutive_corr / 10.0f) * 0.5f;
+                        transparencyLevel = Math.min(transparencyLevel, 1.0f);
+
+                        node.setAlpha(transparencyLevel);
+
+                        //node.setAlpha(transparencyLevel); // Non-action nodes are slightly transparent
                     }
                 }
 
