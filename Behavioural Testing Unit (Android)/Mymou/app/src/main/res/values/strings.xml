@@ -42,6 +42,9 @@
         <item>Shaping 4: 3x5 Maze</item>
         <item>Shaping 5: 4x7 Maze</item>
         <item>Shaping 5.1: 4x7 Optimised Mazes</item>
+        <item>Shaping Op 1: Match Symbol</item>
+        <item>Shaping Op 2: Symbol Consequence</item>
+        <item>Shaping Op 3: 2x2 Maze Operations</item>
     </string-array>
 
     <string-array name="task_descriptions">

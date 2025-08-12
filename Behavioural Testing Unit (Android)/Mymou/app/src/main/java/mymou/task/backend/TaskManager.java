@@ -290,6 +290,16 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
             case 25: // Shaping 3: mazeTask
                 preferencesManager.continuousMazeTasks();
                 break;
+            case 26: // Shaping 3: mazeTask
+                preferencesManager.continuousMazeTasks();
+                break;
+            case 27: // Shaping 3: mazeTask
+                preferencesManager.continuousMazeTasks();
+                break;
+            case 28: // Shaping 3: mazeTask
+                preferencesManager.continuousMazeTasks();
+                break;
+
             default:
                 Log.d(TAG, "No task specified");
                 new Exception("No" +
@@ -451,7 +461,16 @@ public class TaskManager extends FragmentActivity implements View.OnClickListene
                 task = new TaskMaze4x7();
                 break;
             case 25:
-                task = new TaskMazeOpt4x7();
+                task = new TaskMazeOpt4x7(); // Optimal mazes
+                break;
+            case 26:
+                task = new TaskMazeOpMatchSymbol(); // Mazes with operation 2x2
+                break;
+            case 27:
+                task = new TaskMazeOpConsequence(); // Mazes with operation 2x2
+                break;
+            case 28:
+                task = new TaskMazeOp2x2(); // Mazes with operation 2x2
                 break;
             default:
                 new Exception("No valid task specified");

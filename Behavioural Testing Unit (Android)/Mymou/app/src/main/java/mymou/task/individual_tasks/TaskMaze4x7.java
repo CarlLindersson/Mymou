@@ -17,6 +17,7 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
 import android.widget.Button;
+import android.animation.AnimatorListenerAdapter;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.preference.PreferenceManager;
@@ -79,7 +80,7 @@ public class TaskMaze4x7 extends Task {
     List<Edge> edges = new ArrayList<>();
     private Point goal;
     private int gridScale;
-    private float transparencyLevel = 1.0f; // Example: 0.8 for 80% visible
+   // private float transparencyLevel = .6f; // Example: 0.8 for 80% visible
 
     private Button cue1; // First cue
     private Button cue2; // Second cue
@@ -113,8 +114,15 @@ public class TaskMaze4x7 extends Task {
 
     // Cue size
     private int cueSize = 200;
-    private float nodeAlphaLevel = 0.4f;
+
+    // Pulse animation settings
+    private float nodeAlphaLevel = 1.0f; // 0.4 -> 0.6 -> 0.8 -> 1.0
     private int pulsePeriodDuration = 250;
+    private boolean player_node_pulse = false;
+
+    // Non-valid node transparency
+    private boolean non_valid_node_transparant = false;
+    private float non_valid_node_transparency_level = 1.0f; // increase by 1.25 (0.5->0.625->0.75->0.875->1)
 
     // Move duration
     private int moveDuration = 100;
@@ -255,8 +263,9 @@ public class TaskMaze4x7 extends Task {
                 }
             }
             else {
-
-                shakeScreen(parentLayout);
+                shakeScreen(parentLayout, 2);
+                //shakeScreenTwice(parentLayout);
+                //shakeScreen(parentLayout);
 
                 // Log the clicked non-neighbor node's ID
                 logEvent("clickedNonNeighborNode: " + nodeId, callback); // saved in data
@@ -307,11 +316,11 @@ public class TaskMaze4x7 extends Task {
     public void shakeScreen(View parentLayout) {
         // Create translation animations for the X-axis
         ObjectAnimator moveRight = ObjectAnimator.ofFloat(parentLayout, "translationX",
-                0f, 25f); //0f, 25f
+                0f, 225f); //0f, 25f
         ObjectAnimator moveLeft = ObjectAnimator.ofFloat(parentLayout, "translationX",
-                25f, -25f); // 25f, -25f
+                225f, -225f); // 25f, -25f
         ObjectAnimator moveBack = ObjectAnimator.ofFloat(parentLayout, "translationX",
-                -25f, 0f); // -25f, 0f
+                -225f, 10f); // -25f, 0f
 
         // Set duration for each movement
         moveRight.setDuration(50); // 50
@@ -325,6 +334,76 @@ public class TaskMaze4x7 extends Task {
         // Start the animation
         shakeAnimation.start();
     }
+
+    public void shakeScreenTwice(View parentLayout) {
+        // Create translation animations for the X-axis
+        ObjectAnimator moveRight = ObjectAnimator.ofFloat(parentLayout, "translationX", 0f, 225f);
+        ObjectAnimator moveLeft = ObjectAnimator.ofFloat(parentLayout, "translationX", 225f, -225f);
+        ObjectAnimator moveBack = ObjectAnimator.ofFloat(parentLayout, "translationX", -225f, 10f);
+
+        // Set duration for each movement
+        moveRight.setDuration(50);
+        moveLeft.setDuration(50);
+        moveBack.setDuration(50);
+
+        // First animation set
+        AnimatorSet firstShake = new AnimatorSet();
+        firstShake.playSequentially(moveRight, moveLeft, moveBack);
+
+        // Second animation set (clone of the first)
+        ObjectAnimator moveRight2 = ObjectAnimator.ofFloat(parentLayout, "translationX", 10f, 225f);
+        ObjectAnimator moveLeft2 = ObjectAnimator.ofFloat(parentLayout, "translationX", 225f, -225f);
+        ObjectAnimator moveBack2 = ObjectAnimator.ofFloat(parentLayout, "translationX", -225f, 0f);
+        moveRight2.setDuration(50);
+        moveLeft2.setDuration(50);
+        moveBack2.setDuration(50);
+        AnimatorSet secondShake = new AnimatorSet();
+        secondShake.playSequentially(moveRight2, moveLeft2, moveBack2);
+
+        // Start second shake after first ends
+        firstShake.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                secondShake.start();
+            }
+        });
+
+        firstShake.start();
+    }
+
+    public void shakeScreen(View parentLayout, int shakeCount) {
+        int duration = 50; // total time per shakeCount is duration * 3 * shakeCount
+        float amplitude = 225f;
+
+        List<Animator> allAnimations = new ArrayList<>();
+
+        float start = 0f;
+
+        for (int i = 0; i < shakeCount; i++) {
+            float end = (i == shakeCount - 1) ? 0f : 10f;
+
+            ObjectAnimator moveRight = ObjectAnimator.ofFloat(parentLayout, "translationX", start, amplitude);
+            ObjectAnimator moveLeft = ObjectAnimator.ofFloat(parentLayout, "translationX", amplitude, -amplitude);
+            ObjectAnimator moveBack = ObjectAnimator.ofFloat(parentLayout, "translationX", -amplitude, end);
+
+            moveRight.setDuration(duration);
+            moveLeft.setDuration(duration);
+            moveBack.setDuration(duration);
+
+            allAnimations.add(moveRight);
+            allAnimations.add(moveLeft);
+            allAnimations.add(moveBack);
+
+            start = end;  // Use 10f as the next start to keep motion continuous
+        }
+
+        AnimatorSet fullShake = new AnimatorSet();
+        fullShake.playSequentially(allAnimations);
+        fullShake.start();
+    }
+
+
+
 
     private boolean isNeighbor(Point current, Point target) {
         return edges.stream().anyMatch(edge ->
@@ -381,7 +460,7 @@ public class TaskMaze4x7 extends Task {
     // Helper method to create an edge
     public View createEdge(Point start, Point end) {
         View edge = new View(getContext());
-        edge.setBackgroundResource(R.drawable.border); //android.R.color.darker_gray
+        edge.setBackgroundResource(android.R.color.darker_gray); //android.R.color.darker_gray
         int edgeThickness = 50;
 
         if (start.x == end.x) {
@@ -438,7 +517,7 @@ public class TaskMaze4x7 extends Task {
 
         // Create nodes for each grid position
         for (Point position : positions) {
-            Button node = createNode(position, R.drawable.greyoutline_circle, // circle_shape_white,
+            Button node = createNode(position, R.drawable.circle_shape_white, // circle_shape_white,
                     null, true, true, false,
                     offsetX, offsetY, gridScale);
             nodes.put(position, node);
@@ -456,7 +535,7 @@ public class TaskMaze4x7 extends Task {
         highlightNodes(currentPosition, goal);
 
         // Highlight start and goal nodes
-        nodes.get(start).setBackgroundResource(R.drawable.greyoutline_circle);
+        nodes.get(start).setBackgroundResource(R.drawable.circle_shape_white);
         nodes.get(goal).setBackgroundResource(R.drawable.circle_shape);
 
         // Set current position to start node and set blue circle to start position.
@@ -483,8 +562,8 @@ public class TaskMaze4x7 extends Task {
         else {
             // Connect each node to its immediate neighbors
             edges = generateFullyConnectedEdges(positions, gridScale);
-            // Remove two random edges while ensuring connectivity
-            removeRandomEdges(7); // 7 Remove 3 edges
+            // Remove 7 random edges while ensuring connectivity
+            removeRandomEdges(7);
         }
 
         // Create the visual edges in the grid
@@ -509,11 +588,13 @@ public class TaskMaze4x7 extends Task {
             }
             else {
                 if (position != goal) {
-                    float transparencyLevel = 1.0f; //0.5f + (num_consecutive_corr / 10.0f) * 0.5f;
-                    transparencyLevel = Math.min(transparencyLevel, 1.0f);
+                    //float transparencyLevel = 0.5f; //1.0f; //0.5f + (num_consecutive_corr / 10.0f) * 0.5f;
+                    //transparencyLevel = Math.min(transparencyLevel, 1.0f);
 
-                    node.setAlpha(transparencyLevel);
-                    //node.setAlpha(transparencyLevel); // Non-action nodes are slightly transparent
+                    //node.setAlpha(transparencyLevel);
+                    if (non_valid_node_transparant) {
+                        node.setAlpha(non_valid_node_transparency_level); // Non-action nodes are slightly transparent
+                    }
                 }
             }
 
@@ -578,6 +659,7 @@ public class TaskMaze4x7 extends Task {
         }
         return neighbors;
     }
+
     private void removeRandomEdges(int numberOfEdgesToRemove) {
         Random random = new Random();
         int edgesRemoved = 0;
@@ -712,7 +794,7 @@ public class TaskMaze4x7 extends Task {
 
     private void createBlueCircle(Point initialPosition) {
         blueCircle = new View(getContext());
-        blueCircle.setBackgroundResource(R.drawable.circle_hc_blue); // Use a blue circle drawable
+        blueCircle.setBackgroundResource(R.drawable.circle_shape_blue); // Use a blue circle drawable
         //int cueSize = 500;
         blueCircle.setLayoutParams(new ViewGroup.LayoutParams(cueSize, cueSize));
         blueCircle.setX(initialPosition.x - cueSize / 2);
@@ -724,8 +806,10 @@ public class TaskMaze4x7 extends Task {
         blueCircle.bringToFront();
         blueCircle.setZ(2f);
 
-        // Make it blink / pulsate
-        //startAlphaPulse(blueCircle);
+        // Make the player node blink / pulsate
+        if (player_node_pulse) {
+            startAlphaPulse(blueCircle);
+        }
 
     }
 
