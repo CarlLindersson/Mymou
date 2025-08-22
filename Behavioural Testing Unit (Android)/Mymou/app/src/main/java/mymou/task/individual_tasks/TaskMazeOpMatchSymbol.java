@@ -41,26 +41,6 @@ import mymou.task.backend.RewardSystem;
 import mymou.task.backend.TaskInterface;
 import mymou.task.backend.UtilsTask;
 
-/**
- * Shaping 1: Maze Transition
- *
- * Displays an initial white cue with a gray edge.
- * When the white cue is pressed, it turns blue and a green node appears at the end of the edge.
- * Pressing the green node ends the trial.
- *
- * @param num_consecutive_corr the current number of consecutive presses
- *
- * TODO: (1) Make node larger at smallest stage (200).
- * TODO: (2) Shorten edges to be to nodes not under nodes.
- * TODO: (3) make level transition based on performance.
- * TODO: (4) Ensure data and photos are saved correctly.
- * TODO: (5) have setting that allow to animate transition
- * TODO: (6) Make LEVEL 3 where transitions are visible from the start
- * TODO: (7) Make SETTINGS CHANGEABLE FROM TABLET without computer.
- * TODO: (8) add touch listeners and make them log data.
- * TODO: (9) add logs for all other important data.
- */
-
 public class TaskMazeOpMatchSymbol extends Task {
 
     // Debug
@@ -144,13 +124,15 @@ public class TaskMazeOpMatchSymbol extends Task {
     // List of shapes
     List<Integer> shapeDrawables = Arrays.asList(
             R.drawable.circle_green,
-            R.drawable.square_green
+            R.drawable.square_green,
+            R.drawable.star_green
             //   R.drawable.triangle_green
     );
 
     List<Integer> shapeDrawablesPlayer = Arrays.asList(
             R.drawable.circle_blue,
-            R.drawable.square_blue
+            R.drawable.square_blue,
+            R.drawable.star_blue
             //   R.drawable.triangle_green
     );
 
@@ -902,6 +884,157 @@ public class TaskMazeOpMatchSymbol extends Task {
     }
 
     public void populateGrid(int rows, int cols, int gridScale, int offsetX, int offsetY, boolean sparse) {
+        // We will ONLY create nodes that are part of the structure (start + two arms).
+        nodes.clear();
+        edges.clear();
+        occupiedPositions.clear();
+        goals.clear();
+        correctGoals.clear();
+        wrongGoals.clear();
+
+        final int ARM_LEN = 4; // length of each arm
+
+        Random rand = new Random();
+
+        // --- 1) Random start (r,c) ---
+        int startR = rand.nextInt(rows);
+        int startC = rand.nextInt(cols);
+        Point start = rcToPoint(startR, startC, offsetX, offsetY, gridScale);
+
+        // Cardinal directions
+        int[][] DIRS = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
+
+        // Utility to make a "r,c" key
+        java.util.function.BiFunction<Integer,Integer,String> key = (r,c) -> r + "," + c;
+
+        // Helper to build an arm (length = ARM_LEN) without backtracking and without overlap
+        java.util.function.BiFunction<Set<String>, List<int[]>, List<Point>> buildArm = (forbidden, allowedFirstDirs) -> {
+            // try each first direction in random order
+            List<int[]> firstDirs = new ArrayList<>(allowedFirstDirs);
+            Collections.shuffle(firstDirs, rand);
+
+            for (int[] d0 : firstDirs) {
+                // start of the arm (step 1)
+                int r = startR + d0[0], c = startC + d0[1];
+                if (r < 0 || r >= rows || c < 0 || c >= cols) continue;
+                if (forbidden.contains(key.apply(r,c))) continue;
+
+                List<Point> arm = new ArrayList<>();
+                Set<String> localUsed = new HashSet<>(forbidden); // track within this attempt
+                localUsed.add(key.apply(r,c));
+                arm.add(rcToPoint(r, c, offsetX, offsetY, gridScale));
+
+                int prevDr = d0[0], prevDc = d0[1];
+
+                // extend to required length
+                for (int step = 2; step <= ARM_LEN; step++) {
+                    // candidate directions shuffled
+                    List<int[]> options = new ArrayList<>(Arrays.asList(DIRS));
+                    Collections.shuffle(options, rand);
+
+                    boolean placed = false;
+                    for (int[] d : options) {
+                        // no backtracking
+                        if (d[0] == -prevDr && d[1] == -prevDc) continue;
+
+                        int nr = r + d[0], nc = c + d[1];
+                        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+
+                        String k = key.apply(nr, nc);
+                        if (localUsed.contains(k)) continue;
+
+                        // accept
+                        r = nr; c = nc;
+                        prevDr = d[0]; prevDc = d[1];
+                        localUsed.add(k);
+                        arm.add(rcToPoint(r, c, offsetX, offsetY, gridScale));
+                        placed = true;
+                        break;
+                    }
+                    if (!placed) {
+                        // dead end with this initial direction; abandon and try another first dir
+                        arm = null;
+                        break;
+                    }
+                }
+
+                if (arm != null && arm.size() == ARM_LEN) {
+                    return arm;
+                }
+            }
+            return null; // unable to place an arm
+        };
+
+        // First arm
+        Set<String> used = new HashSet<>();
+        used.add(key.apply(startR, startC));
+        List<int[]> allDirs = Arrays.asList(DIRS);
+        List<Point> arm1 = buildArm.apply(used, allDirs);
+        if (arm1 == null) { populateGrid(rows, cols, gridScale, offsetX, offsetY, false); return; }
+
+        // mark used cells from arm1
+        for (Point p : arm1) {
+            int rr = (p.y - offsetY) / gridScale;
+            int cc = (p.x - offsetX) / gridScale;
+            used.add(key.apply(rr, cc));
+        }
+        Point goal1 = arm1.get(ARM_LEN - 1);
+
+        // Second arm (cannot overlap arm1; start can be shared)
+        List<Point> arm2 = buildArm.apply(used, allDirs);
+        if (arm2 == null) { populateGrid(rows, cols, gridScale, offsetX, offsetY, false); return; }
+        Point goal2 = arm2.get(ARM_LEN - 1);
+
+        // --- Create ONLY the connected nodes (start + steps + goals) ---
+        Button nStart = createNode(start, R.drawable.circle_shape_white, null, true, true, false, offsetX, offsetY, gridScale);
+        nodes.put(start, nStart);
+
+        // arm1 nodes
+        for (Point p : arm1) {
+            Button nb = createNode(p, R.drawable.circle_shape_white, null, true, true, false, offsetX, offsetY, gridScale);
+            nodes.put(p, nb);
+        }
+        // arm2 nodes
+        for (Point p : arm2) {
+            Button nb = createNode(p, R.drawable.circle_shape_white, null, true, true, false, offsetX, offsetY, gridScale);
+            nodes.put(p, nb);
+        }
+
+        // --- Edges along arms only ---
+        // start -> first step of each arm
+        edges.add(new Edge(start, arm1.get(0), gridScale, offsetX, offsetY));
+        edges.add(new Edge(start, arm2.get(0), gridScale, offsetX, offsetY));
+        // consecutive steps within each arm
+        for (int i = 0; i < ARM_LEN - 1; i++) {
+            edges.add(new Edge(arm1.get(i), arm1.get(i+1), gridScale, offsetX, offsetY));
+            edges.add(new Edge(arm2.get(i), arm2.get(i+1), gridScale, offsetX, offsetY));
+        }
+        for (Edge e : edges) createEdge(e.start, e.end);
+
+        // --- Player at start ---
+        currentPosition = start;
+        createBlueCircle(start);
+
+        // --- Dual goal states: one correct (same as player), one wrong (transformed) ---
+        setDualGoalStates(goal1, goal2);
+
+        // Logs (unchanged)
+        int g1r = (goal1.y - gridOffsetY) / gridScale;
+        int g1c = (goal1.x - gridOffsetX) / gridScale;
+        int g2r = (goal2.y - gridOffsetY) / gridScale;
+        int g2c = (goal2.x - gridOffsetX) / gridScale;
+
+        logEvent("startNode:" + ((start.y - gridOffsetY)/gridScale) + "," + ((start.x - gridOffsetX)/gridScale), callback);
+        logEvent("goalNode1:" + g1r + "," + g1c, callback);
+        logEvent("goalNode2:" + g2r + "," + g2c, callback);
+
+        boolean goal1Correct = correctGoals.contains(goal1);
+        logEvent("goal1Type:" + (goal1Correct ? "CORRECT" : "WRONG"), callback);
+        logEvent("goal2Type:" + (goal1Correct ? "WRONG" : "CORRECT"), callback);
+    }
+
+    /*
+    public void populateGrid(int rows, int cols, int gridScale, int offsetX, int offsetY, boolean sparse) {
         // We will ONLY create nodes that are part of the structure (start + two 2-step arms).
         nodes.clear();
         edges.clear();
@@ -1013,6 +1146,7 @@ public class TaskMazeOpMatchSymbol extends Task {
         logEvent("goal2Type:" + (goal1Correct ? "WRONG" : "CORRECT"), callback);
         // Nothing else is created => everything not connected is effectively hidden.
     }
+    */
 
 
     public void highlightNodes(Point currentPosition, Point goal) {
